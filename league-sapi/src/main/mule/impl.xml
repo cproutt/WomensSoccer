@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<flow name="get-all-leagues" doc:id="bdddfa3f-12cb-4aa5-ad41-20ff7a10ab69" >
+		<db:select doc:name="Select" doc:id="661d9e6c-26df-42a1-afd9-d82d8aad098c" config-ref="Database_Config">
+			<db:sql ><![CDATA[Select * from league]]></db:sql>
+		</db:select>
+		<ee:transform doc:name="Transform Message" doc:id="84942ebc-c658-458f-8638-8d02e82c7496" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"get-leagues": payload map ( payload01 , indexOfPayload01 ) -> {
+		Id: payload01.league_id,
+		Name: payload01.league_name default "",
+		Country: payload01.country default "",
+		Continent: payload01.continent default ""
+	}
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="6b991421-306e-426f-94fa-8a4b577f195e" message='#[payload."get-leagues".Name]'/>
+	</flow>
+	<flow name="get-league-by-id" doc:id="ed813f81-2a6c-408f-9f28-7aab78573117" >
+		<db:select doc:name="GET /league/{id}" doc:id="5fb3a376-f56f-459c-9a9a-315e6722d0e3" config-ref="Database_Config">
+			<db:sql ><![CDATA[select * from league where league_id = :id]]></db:sql>
+			<db:input-parameters ><![CDATA[#[output application/java
+---
+{
+	id: attributes.uriParams.id as Number
+}]]]></db:input-parameters>
+		</db:select>
+		<ee:transform doc:name="Transform Message" doc:id="1a70f521-91a1-48c0-af67-b52322c3024a" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[output application/json
+---
+{
+	Id: payload.league_id,
+	Name: payload.league_name default "",
+	Country: payload.country default "",
+	Continent: payload.continent default ""
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="6ed2a737-6da8-47b0-81e8-c7dab57f4473" message="#[payload]"/>
+	</flow>
+	<flow name="create-new-league" doc:id="1de55a4f-3ba4-4043-89cb-aa8effea8ca5" >
+		<db:insert doc:name="POST /league" doc:id="0ea1db69-e138-4eb5-98ad-28e291bde50d" config-ref="Database_Config" target="league-name" targetValue="#[payload.Name]">
+			<db:sql ><![CDATA[insert into league (league_name, country, continent) values (:name, :country, :continent)]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{"name": payload.Name, "country": payload.Country, "continent": payload.Continent}]]]></db:input-parameters>
+		</db:insert>
+		<db:select doc:name="Select" doc:id="f5d5fc21-d104-4820-953f-2a640b0c3f41" config-ref="Database_Config">
+			<db:sql ><![CDATA[select league_name, country, continent from league where league_name = :name]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{"name": vars."league-name"}]]]></db:input-parameters>
+		</db:select>
+		<logger level="INFO" doc:name="Logger" doc:id="ab9ae049-51be-489e-b937-0cb11e70bc3e" message="#[payload]"/>
+	</flow>
+	<flow name="update-league" doc:id="28cea713-f740-4e71-9266-1f8fb17b1f37" >
+		<set-variable value="#[output application/java&#10;---&#10;attributes.uriParams.id]" doc:name="League ID" doc:id="0e36dc62-08ea-41ad-b2d3-1812ba4e20c0" variableName="league-id"/>
+		<db:update doc:name="PUT /league/{id}" doc:id="f5080aa8-7408-48ba-8517-d4743e21f5c5" config-ref="Database_Config" target="Name" targetValue="#[payload.Name]">
+			<db:sql ><![CDATA[update league set league_name = :name, country = :country, continent = :continent where league_id = :id]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{"id": attributes.uriParams.id, "name": payload.Name, "country": payload.Country, "continent": payload.Continent}]]]></db:input-parameters>
+		</db:update>
+		<db:select doc:name="Select" doc:id="800cf13e-6bcc-4924-aec2-cf3408cbca81" config-ref="Database_Config">
+			<db:sql ><![CDATA[select league_name, country, continent from league where league_id = :id]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{"id": vars."league-id"}]]]></db:input-parameters>
+		</db:select>
+		<logger level="INFO" doc:name="Logger" doc:id="e293ef31-92b8-4a82-a4cc-3a7ad20623e6" message="#[payload]"/>
+	</flow>
+	<flow name="delete-league-by-id" doc:id="14111df0-007c-4a6d-87d3-60d7df867077" >
+		<set-variable value="#[output application/java&#10;---&#10;attributes.uriParams.id]" doc:name="League Id" doc:id="ab6258cb-30e2-4df8-81f6-d4c1a7b7a861" variableName="league-id"/>
+		<db:delete doc:name="Delete" doc:id="8bb618f1-172c-42e2-ad90-3b5cc650b901" config-ref="Database_Config">
+			<db:sql ><![CDATA[delete from league where league_id = :id]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{"id": attributes.uriParams.id}]]]></db:input-parameters>
+		</db:delete>
+		<set-payload value='#["League" ++ vars."league-id" ++ "is deleted."]' doc:name="Set Payload" doc:id="2e9860b4-cad3-40b4-9ed6-6656251c9303" />
+		<logger level="INFO" doc:name="Logger" doc:id="3e1bb558-6ba3-4e58-add6-ae74ff995883" />
+	</flow>
+	<flow name="update-league-name" doc:id="65ba4edd-5ef2-4300-b763-385b39045bbc" >
+		<db:update doc:name="Update" doc:id="e5a015eb-a442-483c-ba33-7c048fc5271b" config-ref="Database_Config" target="league-name" targetValue="#[payload.name]">
+			<db:sql ><![CDATA[update league set league_name = :name where league_id = :id]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{"id": attributes.uriParams.id, "name": payload.name}]]]></db:input-parameters>
+		</db:update>
+		<logger level="INFO" doc:name="Logger" doc:id="c78cf82e-0bbf-44b1-bdf2-61ff8139949c" />
+	</flow>
+</mule>

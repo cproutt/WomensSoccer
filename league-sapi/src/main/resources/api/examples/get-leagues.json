@@ -1,0 +1,16 @@
+{
+  "get-leagues": [
+    {
+      "Id": 1,
+      "Name": "FAWSL",
+      "Country": "England",
+      "Continent": "Europe"
+    }, 
+    {
+      "Id": 2,
+      "Name": "NWSL",
+      "Country": "USA",
+      "Continent": "North America"
+    }
+  ]
+}

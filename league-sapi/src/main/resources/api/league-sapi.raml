@@ -1,0 +1,69 @@
+#%RAML 1.0
+title: league-sapi
+description: System Api to expose league table from Women's Soccer Database
+
+/league:
+  get:
+    displayName: Get All Leagues
+    description: Get all leagues from Women's Soccer Database
+    responses:
+      200:
+        body:
+          application/json:
+            example: !include examples/get-leagues.raml
+
+  post:
+    displayName: Create New League
+    description: Insert new league into Women's Soccer Database
+    body:
+      application/json:
+        example: !include examples/leagueNoID.raml
+    responses:
+      201:
+        body:
+          application/json:
+            example: !include examples/single-league.raml
+
+  /{id}:
+
+    get:
+      displayName: Get League By ID
+      responses:
+        200:
+          body:
+            application/json:
+              example: !include examples/single-league.raml
+
+    delete:
+      displayName: Delete League By ID
+      responses:
+        204:
+          body:
+            application/json:
+              example: "League Deleted"
+
+    put:
+      displayName: Update league by ID
+      body:
+        application/json:
+          example: !include examples/leagueNoID.raml
+      responses:
+        204:
+          body:
+            application/json:
+              example: !include examples/single-league.raml
+    
+    /name:
+      patch:
+        body:
+          application/json:
+            example: "FA Women's Super League"
+        responses:
+          204:
+            body:
+              application/json:
+                example: "League Name Updated"
+            
+    
+
+    
